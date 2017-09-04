@@ -43,7 +43,6 @@ class FreeMusicArchive:
     def _get_data(self, dataset, fma_id, fields=None):
         url = self.BASE_URL + dataset + 's.json?'
         url += dataset + '_id=' + str(fma_id) + '&api_key=' + self.api_key
-        # print(url)
         r = requests.get(url)
         r.raise_for_status()
         if r.json()['errors']:
@@ -222,8 +221,9 @@ def load(filepath):
 
 
 def get_audio_path(audio_dir, track_id):
-    tid_str = '{:06d}'.format(track_id)
-    return os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3')
+    tid_str = '{:06d}'.format(int(track_id))
+    path = os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3')
+    return path
 
 
 class Loader:
@@ -263,7 +263,6 @@ class PydubLoader(RawAudioLoader):
         song = AudioSegment.from_file(filepath)
         song = song.set_channels(1)
         x = song.get_array_of_samples()
-        # print(filepath) if song.channels != 2 else None
         return np.array(x)
 
 
@@ -290,53 +289,32 @@ def build_sample_loader(audio_dir, Y, loader):
     class SampleLoader:
 
         def __init__(self, tids, batch_size=4):
-            self.lock1 = multiprocessing.Lock()
-            self.lock2 = multiprocessing.Lock()
-            self.batch_foremost = sharedctypes.RawValue(ctypes.c_int, 0)
-            self.batch_rearmost = sharedctypes.RawValue(ctypes.c_int, -1)
-            self.condition = multiprocessing.Condition(lock=self.lock2)
 
-            data = sharedctypes.RawArray(ctypes.c_int, tids.data)
-            self.tids = np.ctypeslib.as_array(data)
-
+            self.tids = tids
+            np.random.shuffle(self.tids)
             self.batch_size = batch_size
             self.loader = loader
-            self.X = np.empty((self.batch_size, *loader.shape))
-            self.Y = np.empty((self.batch_size, Y.shape[1]), dtype=np.int)
+            X_shape = np.append(self.batch_size, loader.shape)
+            self.X = np.empty(X_shape)
+            self.Y = np.empty((self.batch_size, Y.shape[1]), dtype=np.bool)
+            self.idx = 0
 
         def __iter__(self):
             return self
 
         def __next__(self):
-
-            with self.lock1:
-                if self.batch_foremost.value == 0:
+            tids = np.array(self.tids[self.idx:self.idx+self.batch_size])
+            for tid in tids:
+                try:
+                    self.X[self.idx] = self.loader.load(get_audio_path(audio_dir, tid))
+                    self.Y[self.idx] = Y.loc[tid]
+                except:
+                    continue
+                self.idx += 1
+                if self.idx % self.batch_size == 0: ## full
+                    return self.X, self.Y
+                self.idx %= (len(self.tids)-self.batch_size)
+                if self.idx == 0: ## full epoch
                     np.random.shuffle(self.tids)
-
-                batch_current = self.batch_foremost.value
-                if self.batch_foremost.value + self.batch_size < self.tids.size:
-                    batch_size = self.batch_size
-                    self.batch_foremost.value += self.batch_size
-                else:
-                    batch_size = self.tids.size - self.batch_foremost.value
-                    self.batch_foremost.value = 0
-
-                # print(self.tids, self.batch_foremost.value, batch_current, self.tids[batch_current], batch_size)
-                # print('queue', self.tids[batch_current], batch_size)
-                tids = np.array(self.tids[batch_current:batch_current+batch_size])
-
-            for i, tid in enumerate(tids):
-                self.X[i] = self.loader.load(get_audio_path(audio_dir, tid))
-                self.Y[i] = Y.loc[tid]
-
-            with self.lock2:
-                while (batch_current - self.batch_rearmost.value) % self.tids.size > self.batch_size:
-                    # print('wait', indices[0], batch_current, self.batch_rearmost.value)
-                    self.condition.wait()
-                self.condition.notify_all()
-                # print('yield', indices[0], batch_current, self.batch_rearmost.value)
-                self.batch_rearmost.value = batch_current
-
-                return self.X[:batch_size], self.Y[:batch_size]
 
     return SampleLoader
