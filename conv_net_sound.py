@@ -16,7 +16,7 @@ from keras import regularizers
 def custom_STFT_layer(x, FFT_n=2048, FFT_t=256, img_nrows=505, img_ncols=768):
     ## input_shape: (batch_size, timestep)
     ## output_shape:(batch_size, sample, freq_range, channel)
-    scale = 1/2.1475e9
+    scale = 1.0/32768.0 ## pcm_s16le -> pcm_f32le
     y = tf.cast(x, tf.float32)
     y = tf.scalar_mul(scale, y)
     stft = tf.contrib.signal.stft(y, FFT_n, FFT_t)
