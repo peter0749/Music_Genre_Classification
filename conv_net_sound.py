@@ -138,3 +138,8 @@ def conv_net(input_tensor = None,
     return model
 
 
+def STFT_model(total_samp):
+    stft_input = Input(shape=(total_samp, 1))
+    stft_output = Lambda(custom_STFT_layer)(stft_input)
+    stft_model = Model(input=stft_input, output=stft_output)
+    return stft_model
