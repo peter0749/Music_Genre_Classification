@@ -34,7 +34,7 @@ def conv_net(input_tensor = None,
     dev1 = '/gpu:0'
     dev2 = '/gpu:1'
     if input_tensor is None:
-        input_layer = Input(input_shape)
+        input_layer = Input(shape=input_shape)
     else:
         if not K.is_keras_tensor(input_tensor):
             input_layer = Input(tensor=input_tensor, shape=input_shape)
@@ -139,7 +139,7 @@ def conv_net(input_tensor = None,
 
 
 def STFT_model(total_samp):
-    stft_input = Input(shape=(total_samp, 1))
+    stft_input = Input(shape=[total_samp])
     stft_output = Lambda(custom_STFT_layer)(stft_input)
     stft_model = Model(input=stft_input, output=stft_output)
     return stft_model
