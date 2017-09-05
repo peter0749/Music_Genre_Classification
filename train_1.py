@@ -76,8 +76,7 @@ batch_size = 2
 rate = 11025
 iteration = int(sys.argv[2])
 
-loader = utils.LibrosaLoader(sampling_rate=rate)
-SampleLoader = utils.build_sample_loader(AUDIO_DIR, labels_onehot, loader)
+loader = utils.ScipyLoader(sampling_rate=rate)
 
 keras.backend.clear_session()
 
@@ -91,8 +90,9 @@ optimizer = SGD(lr=lr, momentum=0.9)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 checkPoint = ModelCheckpoint(filepath="./top_weight.h5", verbose=1, save_best_only=True, monitor='loss', mode='min', save_weights_only=True, period=50)
 
-model.fit_generator(SampleLoader(train, batch_size=batch_size), steps_per_epoch=int(math.ceil(train.size/batch_size)), epochs=iteration, callbacks=[checkPoint])
-model.evaluate_generator(SampleLoader(val, batch_size=batch_size), steps_per_epoch=int(math.ceil(val.size/batch_size)))
-model.evaluate_generator(SampleLoader(test, batch_size=batch_size), steps_per_epoch=int(math.ceil(test.size/batch_size)))
+#model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, tracks, batch_size=batch_size), steps_per_epoch=int(math.ceil(tracks.size/batch_size)), epochs=iteration, callbacks=[checkPoint])
+model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, train, batch_size=batch_size), steps_per_epoch=int(math.ceil(train.size/batch_size)), epochs=iteration, callbacks=[checkPoint])
+model.evaluate_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, val, batch_size=batch_size), steps_per_epoch=int(math.ceil(val.size/batch_size)))
+model.evaluate_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, test, batch_size=batch_size), steps_per_epoch=int(math.ceil(test.size/batch_size)))
 
 model.save_weights('./conv_net.h5')

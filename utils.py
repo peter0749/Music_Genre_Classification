@@ -1,3 +1,5 @@
+from __future__ import print_function
+import sys
 import dotenv
 import pydot
 import requests
@@ -18,6 +20,9 @@ SAMPLING_RATE = 44100
 
 # Load the environment from the .env file.
 dotenv.load_dotenv(dotenv.find_dotenv())
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
 class FreeMusicArchive:
@@ -222,7 +227,7 @@ def load(filepath):
 
 def get_audio_path(audio_dir, track_id):
     tid_str = '{:06d}'.format(int(track_id))
-    path = os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3')
+    path = os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3.wav')
     return path
 
 
@@ -249,6 +254,16 @@ class LibrosaLoader(RawAudioLoader):
         x, sr = librosa.load(filepath, sr=sr)
         return x
 
+
+class ScipyLoader(RawAudioLoader):
+    def _load(self, filepath):
+        import scipy
+        import scipy.io.wavfile
+        rate, data = scipy.io.wavfile.read(str(filepath))
+        assert rate == self.sampling_rate
+        if data.ndim>1:
+            data = data[...,0] ## one channel
+        return data
 
 class AudioreadLoader(RawAudioLoader):
     def _load(self, filepath):
@@ -284,37 +299,36 @@ class FfmpegLoader(RawAudioLoader):
         return np.fromstring(proc.stdout, dtype="int16")
 
 
-def build_sample_loader(audio_dir, Y, loader):
+def batch_generator(audio_dir, label, loader, tids, batch_size=4):
 
-    class SampleLoader:
+    np.random.shuffle(tids)
+    X = np.empty((batch_size, loader.shape[0]))
+    Y = np.empty((batch_size, label.shape[1]), dtype=np.bool)
+    idx = 0
+    cap = 0
+    not_found = np.array([])
+    for i, tid in enumerate(tids):
+        fname = get_audio_path(audio_dir, tid)
+        if not os.path.isfile(fname):
+            not_found = np.append(not_found, i)
+    tids = np.delete(tids, not_found)
+    print('remainding tids: '+str(len(tids)))
 
-        def __init__(self, tids, batch_size=4):
+    while True:
+        sub_tids = np.array(tids[idx:idx+batch_size])
+        for tid in sub_tids:
+            #try:
+            X[cap] = loader.load(get_audio_path(audio_dir, tid))
+            Y[cap] = label.loc[tid]
+            #except FileNotFoundError:
+                #eprint('FileNotFoundError: '+str(tid))
+                #continue
+            #print('succeed: '+str(cap))
+            cap = (cap+1) % batch_size
+            if cap == 0: ## full
+                yield X, Y
+            idx += batch_size
+            idx %= (len(tids)-batch_size)
+            if idx < batch_size: ## full epoch
+                np.random.shuffle(tids)
 
-            self.tids = tids
-            np.random.shuffle(self.tids)
-            self.batch_size = batch_size
-            self.loader = loader
-            X_shape = np.append(self.batch_size, loader.shape)
-            self.X = np.empty(X_shape)
-            self.Y = np.empty((self.batch_size, Y.shape[1]), dtype=np.bool)
-            self.idx = 0
-
-        def __iter__(self):
-            return self
-
-        def __next__(self):
-            tids = np.array(self.tids[self.idx:self.idx+self.batch_size])
-            for tid in tids:
-                try:
-                    self.X[self.idx] = self.loader.load(get_audio_path(audio_dir, tid))
-                    self.Y[self.idx] = Y.loc[tid]
-                except:
-                    continue
-                self.idx += 1
-                if self.idx % self.batch_size == 0: ## full
-                    return self.X, self.Y
-                self.idx %= (len(self.tids)-self.batch_size)
-                if self.idx == 0: ## full epoch
-                    np.random.shuffle(self.tids)
-
-    return SampleLoader
