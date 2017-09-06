@@ -71,8 +71,8 @@ print('All genres ({}): {}'.format(len(genres), genres))
 labels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])
 labels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)
 
-lr = 0.0001
-batch_size = 2
+lr = 0.002
+batch_size = 8
 rate = 11025
 iteration = int(sys.argv[2])
 
@@ -86,9 +86,9 @@ model = conv_net_sound.conv_net(input_shape = loader.shape,
 if (os.path.isfile('./top_weight.h5')):
     model.load_weights('./top_weight.h5')
 model.summary()
-optimizer = SGD(lr=lr, momentum=0.9)
+optimizer = SGD(lr=lr, momentum=0.9, decay=1e-6)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-checkPoint = ModelCheckpoint(filepath="./top_weight.h5", verbose=1, save_best_only=True, monitor='loss', mode='min', save_weights_only=True, period=50)
+checkPoint = ModelCheckpoint(filepath="./top_weight.h5", verbose=1, save_best_only=True, monitor='loss', mode='min', save_weights_only=True, period=1)
 
 #model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, tracks, batch_size=batch_size), steps_per_epoch=int(math.ceil(tracks.size/batch_size)), epochs=iteration, callbacks=[checkPoint])
 model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, train, batch_size=batch_size), steps_per_epoch=int(math.ceil(train.size/batch_size)), epochs=iteration, callbacks=[checkPoint])

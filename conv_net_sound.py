@@ -13,7 +13,7 @@ from keras import backend as K
 from keras.engine.topology import Layer
 from keras import regularizers
 
-def custom_STFT_layer(x, FFT_n=2048, FFT_t=256, img_nrows=505, img_ncols=768):
+def custom_STFT_layer(x, FFT_n=2048, FFT_t=256, img_nrows=505, img_ncols=1025):
     ## input_shape: (batch_size, timestep)
     ## output_shape:(batch_size, sample, freq_range, channel)
     scale = 1.0/32768.0 ## pcm_s16le -> pcm_f32le, your wav file must in pcm_s16le format
@@ -34,10 +34,10 @@ def conv_net(input_tensor = None,
     dev1 = '/gpu:0'
     dev2 = '/gpu:1'
     if input_tensor is None:
-        input_layer = Input(shape=input_shape)
+        input_layer = Input(input_shape)
     else:
         if not K.is_keras_tensor(input_tensor):
-            input_layer = Input(tensor=input_tensor, shape=input_shape)
+            input_layer = Input(tensor=input_tensor, shape=input_tensor.shape)
         else:
             input_layer = input_tensor
 
@@ -139,7 +139,7 @@ def conv_net(input_tensor = None,
 
 
 def STFT_model(total_samp):
-    stft_input = Input(shape=[total_samp])
+    stft_input = Input(shape=(total_samp, 1))
     stft_output = Lambda(custom_STFT_layer)(stft_input)
     stft_model = Model(input=stft_input, output=stft_output)
     return stft_model
