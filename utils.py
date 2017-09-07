@@ -227,7 +227,7 @@ def load(filepath):
 
 def get_audio_path(audio_dir, track_id):
     tid_str = '{:06d}'.format(int(track_id))
-    path = os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3.wav')
+    path = os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3')
     return path
 
 
@@ -311,7 +311,7 @@ def batch_generator(audio_dir, label, loader, tids, batch_size=4):
         if not os.path.isfile(fname):
             not_found = np.append(not_found, i)
     tids = np.delete(tids, not_found)
-    print('remainding tids: '+str(len(tids)))
+    eprint('remainding tids: '+str(len(tids)))
 
     while True:
         sub_tids = np.array(tids[idx:idx+batch_size])
