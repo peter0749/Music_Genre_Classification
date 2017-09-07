@@ -23,7 +23,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 from keras import backend as K
 from keras.engine.topology import Layer
 from keras import regularizers
-from keras.optimizers import SGD
+from keras.optimizers import Adagrad
 from keras.utils.io_utils import HDF5Matrix
 from keras.callbacks import ModelCheckpoint
 from scipy.optimize import fmin_l_bfgs_b
@@ -71,8 +71,8 @@ print('All genres ({}): {}'.format(len(genres), genres))
 labels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])
 labels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)
 
-lr = 0.002
-batch_size = 8
+lr = 0.001
+batch_size = 4
 rate = 11025
 iteration = int(sys.argv[2])
 
@@ -86,7 +86,7 @@ model = conv_net_sound.conv_net(input_shape = loader.shape,
 if (os.path.isfile('./top_weight.h5')):
     model.load_weights('./top_weight.h5')
 model.summary()
-optimizer = SGD(lr=lr, momentum=0.9, decay=1e-6)
+optimizer = Adagrad(lr=lr)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 checkPoint = ModelCheckpoint(filepath="./top_weight.h5", verbose=1, save_best_only=True, monitor='loss', mode='min', save_weights_only=True, period=1)
 
