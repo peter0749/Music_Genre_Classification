@@ -76,7 +76,7 @@ batch_size = 4
 rate = 11025
 iteration = int(sys.argv[2])
 
-loader = utils.ScipyLoader(sampling_rate=rate)
+loader = utils.FfmpegLoader(sampling_rate=rate)
 
 keras.backend.clear_session()
 
