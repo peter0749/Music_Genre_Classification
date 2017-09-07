@@ -287,7 +287,6 @@ class FfmpegLoader(RawAudioLoader):
         import subprocess as sp
         command = ['ffmpeg',
                    '-i', filepath,
-                   '-f', 's16le',
                    '-acodec', 'pcm_s16le',
                    '-ac', '1']  # channels: 2 for stereo, 1 for mono
         if self.sampling_rate != SAMPLING_RATE:
