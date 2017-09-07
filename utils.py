@@ -288,6 +288,7 @@ class FfmpegLoader(RawAudioLoader):
         command = ['ffmpeg',
                    '-i', filepath,
                    '-acodec', 'pcm_s16le',
+                   '-f', 's16le',
                    '-ac', '1']  # channels: 2 for stereo, 1 for mono
         if self.sampling_rate != SAMPLING_RATE:
             command.extend(['-ar', str(self.sampling_rate)])
