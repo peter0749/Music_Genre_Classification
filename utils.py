@@ -317,15 +317,14 @@ def batch_generator(audio_dir, label, loader, tids, batch_size=4):
     while True:
         sub_tids = np.array(tids[idx:idx+batch_size])
         for tid in sub_tids:
-            #try:
-            x = loader.load(get_audio_path(audio_dir, tid))
-            xlen = len(x)
-            X[cap,:xlen] = x[:xlen]
-            Y[cap] = label.loc[tid]
-            #except FileNotFoundError:
-                #eprint('FileNotFoundError: '+str(tid))
-                #continue
-            #print('succeed: '+str(cap))
+            try:
+                x = loader.load(get_audio_path(audio_dir, tid))
+                xlen = len(x)
+                X[cap,:xlen] = x[:xlen]
+                Y[cap] = label.loc[tid]
+            except:
+                eprint('Error on track ID: '+str(tid))
+                continue
             cap = (cap+1) % batch_size
             if cap == 0: ## full
                 yield X, Y
