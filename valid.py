@@ -72,9 +72,8 @@ labels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])
 labels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)
 
 lr = 0.001
-batch_size = 4
+batch_size = 1
 rate = 11025
-iteration = int(sys.argv[2])
 
 loader = utils.FfmpegLoader(sampling_rate=rate)
 
@@ -90,5 +89,6 @@ optimizer = Adagrad(lr=lr)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 checkPoint = ModelCheckpoint(filepath="./top_weight.h5", verbose=1, save_best_only=True, monitor='loss', mode='min', save_weights_only=True, period=1)
 
-model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, train, batch_size=batch_size), steps_per_epoch=int(math.ceil(train.size/batch_size)), epochs=iteration, callbacks=[checkPoint])
+model.evaluate_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, val, batch_size=batch_size),  steps=int(math.ceil(val.size/batch_size)))
+model.evaluate_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, test, batch_size=batch_size), steps=int(math.ceil(test.size/batch_size)))
 
