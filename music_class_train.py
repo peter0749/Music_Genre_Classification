@@ -90,5 +90,5 @@ optimizer = Adagrad(lr=lr)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 checkPoint = ModelCheckpoint(filepath="./top_weight.h5", verbose=1, save_best_only=True, monitor='loss', mode='min', save_weights_only=True, period=1)
 
-model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, train, batch_size=batch_size), steps_per_epoch=int(math.ceil(train.size/batch_size)), epochs=iteration, callbacks=[checkPoint])
+model.fit_generator(utils.batch_generator(AUDIO_DIR, labels_onehot, loader, train, batch_size=batch_size), steps_per_epoch=int(math.ceil(train.size/batch_size)), epochs=iteration, validation_data=utils.batch_generator(AUDIO_DIR, labels_onehot, loader, val, batch_size=batch_size), validation_steps=50, callbacks=[checkPoint])
 
