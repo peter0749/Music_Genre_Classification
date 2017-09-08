@@ -71,7 +71,7 @@ print('All genres ({}): {}'.format(len(genres), genres))
 labels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])
 labels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)
 
-lr = 0.001
+lr = 0.0001
 batch_size = 4
 rate = 11025
 iteration = int(sys.argv[2])
@@ -84,6 +84,7 @@ model = conv_net_sound.conv_net(input_shape = loader.shape,
                           class_n = int(labels_onehot.shape[1])
                          )
 if (os.path.isfile('./top_weight.h5')):
+    print('weights loaded')
     model.load_weights('./top_weight.h5')
 model.summary()
 optimizer = Adagrad(lr=lr)
